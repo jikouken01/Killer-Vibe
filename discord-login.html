@@ -333,7 +333,7 @@
                     })
                 });
 
-                // Store auth data in localStorage for the app
+                // Store auth data in Supabase for app communication
                 const authData = {
                     isAuthenticated: true,
                     user: {
@@ -348,6 +348,23 @@
                     expiresAt: Date.now() + (tokenData.expires_in * 1000)
                 };
 
+                // Store in Supabase for app communication
+                await fetch(`${SUPABASE_URL}/rest/v1/auth_sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({
+                        user_id: userData.id,
+                        status: 'authenticated',
+                        discord_data: authData,
+                        created_at: new Date().toISOString(),
+                        expires_at: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
+                    })
+                });
+
+                // Also store in localStorage as backup
                 localStorage.setItem('killer_vibe_auth', JSON.stringify(authData));
                 
                 // Show success
@@ -413,4 +430,3 @@
     </script>
 </body>
 </html>
-
