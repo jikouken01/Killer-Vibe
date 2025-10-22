@@ -214,7 +214,7 @@
     <script>
         // Discord OAuth2 Configuration
         const DISCORD_CLIENT_ID = '1429902885558423662';
-        const DISCORD_CLIENT_SECRET = 'KuPLyWXfrXpbwlq95xMvYKjhr0oqZIIf'; // Replace with your actual secret
+        const DISCORD_CLIENT_SECRET = 'YOUR_DISCORD_CLIENT_SECRET'; // Replace with your actual secret
         const DISCORD_REDIRECT_URI = 'https://jikouken01.github.io/Killer-Vibe/discord-login.html';
         const SUPABASE_URL = 'https://rpexdiineozlyxjmsngj.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwZXhkaWluZW96bHl4am1zbmdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzU0NTAsImV4cCI6MjA3NjU1MTQ1MH0.3T--wUkptHRc1dI--tuuVCDW6FGMB01MArV7UvtMKOw';
@@ -317,21 +317,43 @@
                 
                 showStatus('Storing user data...', 'loading');
                 
-                // Store user data in Supabase
-                const storeResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles`, {
+                // Store user data in Supabase (UPSERT - Insert or Update)
+                console.log('🔐 Discord Login: Upserting user in Supabase:', {
+                    discord_id: userData.id,
+                    username: userData.username,
+                    email: userData.email
+                });
+                
+                const storeResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?on_conflict=discord_id`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${tokenData.access_token}`
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Prefer': 'resolution=merge-duplicates'
                     },
                     body: JSON.stringify({
                         discord_id: userData.id,
                         username: userData.username,
                         avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
-                        email: userData.email
+                        email: userData.email,
+                        updated_at: new Date().toISOString()
                     })
                 });
+                
+                console.log('🔐 Discord Login: Supabase response status:', storeResponse.status);
+                
+                if (!storeResponse.ok) {
+                    const errorText = await storeResponse.text();
+                    console.error('❌ Discord Login: Failed to store user in Supabase:', {
+                        status: storeResponse.status,
+                        statusText: storeResponse.statusText,
+                        error: errorText
+                    });
+                } else {
+                    const result = await storeResponse.json();
+                    console.log('✅ Discord Login: User stored in Supabase successfully:', result);
+                }
 
                 // Store auth data in Supabase for app communication
                 const authData = {
