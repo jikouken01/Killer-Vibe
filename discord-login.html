@@ -337,6 +337,8 @@
                         username: userData.username,
                         avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
                         email: userData.email,
+                        voicy_username: null, // Will be set when user enters Voicy username
+                        collection_data: {}, // Will be populated when user syncs collection
                         updated_at: new Date().toISOString()
                     })
                 });
