@@ -353,8 +353,18 @@
                         error: errorText
                     });
                 } else {
-                    const result = await storeResponse.json();
-                    console.log('✅ Discord Login: User stored in Supabase successfully:', result);
+                    // Check if response has content before parsing JSON
+                    const responseText = await storeResponse.text();
+                    if (responseText.trim()) {
+                        try {
+                            const result = JSON.parse(responseText);
+                            console.log('✅ Discord Login: User stored in Supabase successfully:', result);
+                        } catch (parseError) {
+                            console.log('✅ Discord Login: User stored in Supabase successfully (no JSON response)');
+                        }
+                    } else {
+                        console.log('✅ Discord Login: User stored in Supabase successfully (empty response)');
+                    }
                 }
 
                 // Store auth data in Supabase for app communication
@@ -373,20 +383,30 @@
                 };
 
                 // Store in Supabase for app communication
-                await fetch(`${SUPABASE_URL}/rest/v1/auth_sessions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY
-                    },
-                    body: JSON.stringify({
-                        user_id: userData.id,
-                        status: 'authenticated',
-                        discord_data: authData,
-                        created_at: new Date().toISOString(),
-                        expires_at: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
-                    })
-                });
+                try {
+                    const authSessionResponse = await fetch(`${SUPABASE_URL}/rest/v1/auth_sessions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY
+                        },
+                        body: JSON.stringify({
+                            user_id: userData.id,
+                            status: 'authenticated',
+                            discord_data: authData,
+                            created_at: new Date().toISOString(),
+                            expires_at: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
+                        })
+                    });
+
+                    if (authSessionResponse.ok) {
+                        console.log('✅ Discord Login: Auth session stored successfully');
+                    } else {
+                        console.error('❌ Discord Login: Failed to store auth session:', authSessionResponse.status);
+                    }
+                } catch (authSessionError) {
+                    console.error('❌ Discord Login: Auth session storage error:', authSessionError);
+                }
 
                 // Also store in localStorage as backup
                 localStorage.setItem('killer_vibe_auth', JSON.stringify(authData));
@@ -454,4 +474,3 @@
     </script>
 </body>
 </html>
-
