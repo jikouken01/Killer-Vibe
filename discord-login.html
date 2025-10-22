@@ -317,11 +317,60 @@
                 
                 showStatus('Storing user data...', 'loading');
                 
+                // First, check if user already exists in Supabase
+                console.log('🔐 Discord Login: Checking for existing user profile...');
+                const existingProfileResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?discord_id=eq.${userData.id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                let existingProfile = null;
+                if (existingProfileResponse.ok) {
+                    const existingData = await existingProfileResponse.json();
+                    if (existingData && existingData.length > 0) {
+                        existingProfile = existingData[0];
+                        console.log('🔐 Discord Login: Found existing profile:', existingProfile);
+                    }
+                }
+
+                // Prepare profile data (preserve existing data)
+                const profileData = {
+                    discord_id: userData.id,
+                    username: userData.username,
+                    avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
+                    email: userData.email,
+                    updated_at: new Date().toISOString()
+                };
+
+                // Only add voicy_username and collection_data if they don't exist
+                if (existingProfile) {
+                    // Preserve existing data
+                    profileData.voicy_username = existingProfile.voicy_username || null;
+                    profileData.collection_data = existingProfile.collection_data || {};
+                    profileData.killer_vibe_saved_items = existingProfile.killer_vibe_saved_items || {};
+                    console.log('🔐 Discord Login: Preserving existing data:', {
+                        voicy_username: profileData.voicy_username,
+                        has_collection_data: !!profileData.collection_data,
+                        has_saved_items: !!profileData.killer_vibe_saved_items
+                    });
+                } else {
+                    // New user - set defaults
+                    profileData.voicy_username = null;
+                    profileData.collection_data = {};
+                    profileData.killer_vibe_saved_items = {};
+                    console.log('🔐 Discord Login: New user - setting defaults');
+                }
+                
                 // Store user data in Supabase (UPSERT - Insert or Update)
                 console.log('🔐 Discord Login: Upserting user in Supabase:', {
                     discord_id: userData.id,
                     username: userData.username,
-                    email: userData.email
+                    email: userData.email,
+                    preserving_data: !!existingProfile
                 });
                 
                 const storeResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?on_conflict=discord_id`, {
@@ -332,15 +381,7 @@
                         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
                         'Prefer': 'resolution=merge-duplicates'
                     },
-                    body: JSON.stringify({
-                        discord_id: userData.id,
-                        username: userData.username,
-                        avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
-                        email: userData.email,
-                        voicy_username: null, // Will be set when user enters Voicy username
-                        collection_data: {}, // Will be populated when user syncs collection
-                        updated_at: new Date().toISOString()
-                    })
+                    body: JSON.stringify(profileData)
                 });
                 
                 console.log('🔐 Discord Login: Supabase response status:', storeResponse.status);
