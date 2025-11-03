@@ -232,21 +232,20 @@
                 if (encodedKey.includes('|')) {
                     const parts = encodedKey.split('|');
                     const decoded = parts.map(part => {
+                        if (!part) return ''; // Empty part represents empty string
                         try { return atob(part); } catch { return part; }
-                    }).join('');
+                    }).join(''); // Always join without separators for chunked encoding
                     if (decoded.startsWith('http')) return decoded;
                     if (decoded.includes('.')) return decoded;
-                    return parts.map(part => {
-                        try { return atob(part); } catch { return part; }
-                    }).join('-');
+                    return decoded; // Return joined string
                 }
                 return encodedKey;
             } catch { return encodedKey; }
         }
         
         // Decode API keys (will be replaced during build)
-        const SUPABASE_URL_ENCODED = 'aHR0cHM6Ly9ycGV4ZGlpbmVvemx5eGptc25nai5zdXBhYmFzZS5jbw==';
-        const SUPABASE_ANON_KEY_ENCODED = 'ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5Kd1pYaGthV2x1Wlc5NmJIbDRhbTF6Ym1kcUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTmpBNU56VTBOVEFzSW1WNGNDSTZNakEzTmpVMU1UUTFNSDAuM1Q=||d1VrcHRIUmMxZEk=||dHV1VkNEVzZGR01CMDFNQXJWN1V2dE1LT3c=';
+        const SUPABASE_URL_ENCODED = '{{SUPABASE_URL_ENCODED}}';
+        const SUPABASE_ANON_KEY_ENCODED = '{{SUPABASE_ANON_KEY_ENCODED}}';
         const SUPABASE_URL = decodeUrl(SUPABASE_URL_ENCODED);
         const SUPABASE_ANON_KEY = decodeApiKey(SUPABASE_ANON_KEY_ENCODED);
 
