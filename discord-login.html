@@ -246,8 +246,19 @@
         // Decode API keys (will be replaced during build)
         const SUPABASE_URL_ENCODED = '{{SUPABASE_URL_ENCODED}}';
         const SUPABASE_ANON_KEY_ENCODED = '{{SUPABASE_ANON_KEY_ENCODED}}';
+        
+        console.log('🔐 Discord Login: Encoded URL:', SUPABASE_URL_ENCODED ? SUPABASE_URL_ENCODED.substring(0, 50) + '...' : 'EMPTY');
+        console.log('🔐 Discord Login: Encoded Key length:', SUPABASE_ANON_KEY_ENCODED ? SUPABASE_ANON_KEY_ENCODED.length : 0);
+        console.log('🔐 Discord Login: Encoded Key first 50:', SUPABASE_ANON_KEY_ENCODED ? SUPABASE_ANON_KEY_ENCODED.substring(0, 50) + '...' : 'EMPTY');
+        
         const SUPABASE_URL = decodeUrl(SUPABASE_URL_ENCODED);
         const SUPABASE_ANON_KEY = decodeApiKey(SUPABASE_ANON_KEY_ENCODED);
+        
+        console.log('🔐 Discord Login: Decoded URL:', SUPABASE_URL);
+        console.log('🔐 Discord Login: Decoded Key length:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0);
+        console.log('🔐 Discord Login: Decoded Key first 20:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'EMPTY');
+        console.log('🔐 Discord Login: Decoded Key ends with:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 20) : 'N/A');
+        console.log('🔐 Discord Login: Key has -- characters:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.includes('--') : false);
 
         // Discord OAuth2 Configuration
         const DISCORD_CLIENT_ID = '1429902885558423662';
@@ -354,6 +365,10 @@
                 
                 // First, check if user already exists in Supabase
                 console.log('🔐 Discord Login: Checking for existing user profile...');
+                console.log('🔐 Discord Login: Using URL:', `${SUPABASE_URL}/rest/v1/user_profiles?discord_id=eq.${userData.id}`);
+                console.log('🔐 Discord Login: Using API key length:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0);
+                console.log('🔐 Discord Login: Using API key ends with:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 20) : 'N/A');
+                
                 const existingProfileResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?discord_id=eq.${userData.id}`, {
                     method: 'GET',
                     headers: {
@@ -362,6 +377,14 @@
                         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
                     }
                 });
+                
+                console.log('🔐 Discord Login: Existing profile response status:', existingProfileResponse.status, existingProfileResponse.statusText);
+                if (!existingProfileResponse.ok) {
+                    const errorText = await existingProfileResponse.text();
+                    console.error('❌ Discord Login: Failed to check existing profile:', existingProfileResponse.status, errorText);
+                    console.error('❌ Request URL:', existingProfileResponse.url);
+                    console.error('❌ API key used (first 20):', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'EMPTY');
+                }
 
                 let existingProfile = null;
                 if (existingProfileResponse.ok) {
@@ -408,6 +431,10 @@
                     preserving_data: !!existingProfile
                 });
                 
+                console.log('🔐 Discord Login: Upserting to URL:', `${SUPABASE_URL}/rest/v1/user_profiles?on_conflict=discord_id`);
+                console.log('🔐 Discord Login: Using API key length:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0);
+                console.log('🔐 Discord Login: Using API key ends with:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 20) : 'N/A');
+                
                 const storeResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?on_conflict=discord_id`, {
                     method: 'POST',
                     headers: {
@@ -419,15 +446,15 @@
                     body: JSON.stringify(profileData)
                 });
                 
-                console.log('🔐 Discord Login: Supabase response status:', storeResponse.status);
+                console.log('🔐 Discord Login: Supabase response status:', storeResponse.status, storeResponse.statusText);
                 
                 if (!storeResponse.ok) {
                     const errorText = await storeResponse.text();
-                    console.error('❌ Discord Login: Failed to store user in Supabase:', {
-                        status: storeResponse.status,
-                        statusText: storeResponse.statusText,
-                        error: errorText
-                    });
+                    console.error('❌ Discord Login: Failed to store user in Supabase!', storeResponse.status, errorText);
+                    console.error('❌ Request URL:', storeResponse.url);
+                    console.error('❌ API key used (first 20):', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'EMPTY');
+                    console.error('❌ API key used (ends with):', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 20) : 'N/A');
+                    console.error('❌ Key has -- characters:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.includes('--') : false);
                 } else {
                     // Check if response has content before parsing JSON
                     const responseText = await storeResponse.text();
@@ -460,6 +487,10 @@
 
                 // Store in Supabase for app communication
                 try {
+                    console.log('🔐 Discord Login: Storing auth session to URL:', `${SUPABASE_URL}/rest/v1/auth_sessions`);
+                    console.log('🔐 Discord Login: Using API key length:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0);
+                    console.log('🔐 Discord Login: Using API key ends with:', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(SUPABASE_ANON_KEY.length - 20) : 'N/A');
+                    
                     const authSessionResponse = await fetch(`${SUPABASE_URL}/rest/v1/auth_sessions`, {
                         method: 'POST',
                         headers: {
@@ -474,11 +505,16 @@
                             expires_at: new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString()
                         })
                     });
+                    
+                    console.log('🔐 Discord Login: Auth session response status:', authSessionResponse.status, authSessionResponse.statusText);
 
                     if (authSessionResponse.ok) {
                         console.log('✅ Discord Login: Auth session stored successfully');
                     } else {
-                        console.error('❌ Discord Login: Failed to store auth session:', authSessionResponse.status);
+                        const errorText = await authSessionResponse.text();
+                        console.error('❌ Discord Login: Failed to store auth session!', authSessionResponse.status, errorText);
+                        console.error('❌ Request URL:', authSessionResponse.url);
+                        console.error('❌ API key used (first 20):', SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'EMPTY');
                     }
                 } catch (authSessionError) {
                     console.error('❌ Discord Login: Auth session storage error:', authSessionError);
