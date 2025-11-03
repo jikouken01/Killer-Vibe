@@ -212,12 +212,48 @@
     </div>
 
     <script>
+        // API Key Decoder (simple base64 obfuscation)
+        function decodeUrl(encodedUrl) {
+            if (!encodedUrl) return '';
+            try {
+                if (encodedUrl.includes('|')) {
+                    const parts = encodedUrl.split('|');
+                    return parts.map(part => {
+                        try { return atob(part); } catch { return part; }
+                    }).join('');
+                }
+                try { return atob(encodedUrl); } catch { return encodedUrl; }
+            } catch { return encodedUrl; }
+        }
+        
+        function decodeApiKey(encodedKey) {
+            if (!encodedKey) return '';
+            try {
+                if (encodedKey.includes('|')) {
+                    const parts = encodedKey.split('|');
+                    const decoded = parts.map(part => {
+                        try { return atob(part); } catch { return part; }
+                    }).join('');
+                    if (decoded.startsWith('http')) return decoded;
+                    if (decoded.includes('.')) return decoded;
+                    return parts.map(part => {
+                        try { return atob(part); } catch { return part; }
+                    }).join('-');
+                }
+                return encodedKey;
+            } catch { return encodedKey; }
+        }
+        
+        // Decode API keys (will be replaced during build)
+        const SUPABASE_URL_ENCODED = 'aHR0cHM6Ly9ycGV4ZGlpbmVvemx5eGptc25nai5zdXBhYmFzZS5jbw==';
+        const SUPABASE_ANON_KEY_ENCODED = 'ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5Kd1pYaGthV2x1Wlc5NmJIbDRhbTF6Ym1kcUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTmpBNU56VTBOVEFzSW1WNGNDSTZNakEzTmpVMU1UUTFNSDAuM1Q=||d1VrcHRIUmMxZEk=||dHV1VkNEVzZGR01CMDFNQXJWN1V2dE1LT3c=';
+        const SUPABASE_URL = decodeUrl(SUPABASE_URL_ENCODED);
+        const SUPABASE_ANON_KEY = decodeApiKey(SUPABASE_ANON_KEY_ENCODED);
+
         // Discord OAuth2 Configuration
         const DISCORD_CLIENT_ID = '1429902885558423662';
         const DISCORD_CLIENT_SECRET = '77wGMd36fsRKNfJnc7yNWPUsXDNhdElz'; // Replace with your actual secret
         const DISCORD_REDIRECT_URI = 'https://jikouken01.github.io/Killer-Vibe/discord-login.html';
-        const SUPABASE_URL = 'https://rpexdiineozlyxjmsngj.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwZXhkaWluZW96bHl4am1zbmdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzU0NTAsImV4cCI6MjA3NjU1MTQ1MH0.3T--wUkptHRc1dI--tuuVCDW6FGMB01MArV7UvtMKOw';
 
         // DOM Elements
         const discordBtn = document.getElementById('discordLoginBtn');
